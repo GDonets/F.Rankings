@@ -1,10 +1,14 @@
+using F.Rankings.Converters;
+using F.Rankings.Services;
+using F.Rankings.Services.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Polly;
+using System;
 
 namespace F.Rankings
 {
@@ -20,6 +24,17 @@ namespace F.Rankings
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var rankingOptions = new RankingsServiceOptions();
+            Configuration.GetSection("PartnerApi").Bind(rankingOptions);
+            services.AddSingleton(rankingOptions);
+
+            services.AddHttpClient<RankingsService>()
+                .AddTransientHttpErrorPolicy(p =>
+                    p.WaitAndRetryAsync(5, count => TimeSpan.FromMilliseconds(count * count * 1000)));
+
+            services.AddTransient<IModelDtoConverter<Models.Price, DTO.Price>, PriceConverter>();
+            services.AddTransient<IModelDtoConverter<Models.Property, DTO.Property>, PropertyConverter>();
+
             services.AddControllersWithViews();
             // In production, the Angular files will be served from this directory
             services.AddSpaStaticFiles(configuration =>

@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using F.Rankings.DTO;
+using F.Rankings.Services.Services;
+using F.Rankings.Services.Clients;
 
 namespace F.Rankings.Services
 {
@@ -16,22 +17,21 @@ namespace F.Rankings.Services
         private const string PageSizeParameter = "pagesize=25";
 
         private readonly string _apiKey = string.Empty;
-        private readonly HttpClient _client;
+        private readonly string _baseUrl = string.Empty;
+        private readonly IBaseHttpClient _client;
 
-        public RankingsService(
-            HttpClient client,
-            string apiBaseUrl,
-            string apiKey)
+        public RankingsService(IBaseHttpClient client, RankingsServiceOptions options)
         {
-            client.BaseAddress = new Uri(apiBaseUrl);
+            _baseUrl = options.ApiBaseUrl;
             _client = client;
-            _apiKey = apiKey;
+            _apiKey = options.ApiKey;
         }
 
         public async Task<IEnumerable<Agent>> GetTopByPropertyListed(int count = 10)
         {
             var queryBuilder = new StringBuilder();
-            queryBuilder.Append($"/{_apiKey}/?{WithoutGardenParameters}&page=0&{PageSizeParameter}");
+            queryBuilder.Append(_baseUrl);
+            queryBuilder.Append($"/{_apiKey}/?{WithoutGardenParameters}&page=1&{PageSizeParameter}");
 
             return await GetAllByQuery(count, queryBuilder);
         }
@@ -39,7 +39,8 @@ namespace F.Rankings.Services
         public async Task<IEnumerable<Agent>> GetTopByPropertyListedWithGarden(int count = 10)
         {
             var queryBuilder = new StringBuilder();
-            queryBuilder.Append($"/{_apiKey}/?{WithGardenParameters}&page=0&{PageSizeParameter}");
+            queryBuilder.Append(_baseUrl);
+            queryBuilder.Append($"/{_apiKey}/?{WithGardenParameters}&page=1&{PageSizeParameter}");
 
             return await GetAllByQuery(count, queryBuilder);
         }
@@ -51,6 +52,11 @@ namespace F.Rankings.Services
             while (true)
             {
                 var response = await _client.GetAsync(queryBuilder.ToString());
+
+                if (!response.IsSuccessStatusCode) 
+                {
+                    throw new Exception($"Cannot get response! Code: {response.StatusCode}, Reason: {response.ReasonPhrase}");
+                }
 
                 var res = await JsonSerializer.DeserializeAsync<ApiResponse>(await response.Content.ReadAsStreamAsync());
 
