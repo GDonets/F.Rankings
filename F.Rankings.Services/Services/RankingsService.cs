@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using F.Rankings.Converters;
+using F.Rankings.DTO;
 
 namespace F.Rankings.Services
 {
@@ -18,20 +17,18 @@ namespace F.Rankings.Services
 
         private readonly string _apiKey = string.Empty;
         private readonly HttpClient _client;
-        private readonly IModelDtoConverter<Models.Property, DTO.Property> _propertyConverter;
 
         public RankingsService(
             HttpClient client,
-            IConfiguration configuration,
-            IModelDtoConverter<Models.Property, DTO.Property> propertyConverter)
+            string apiBaseUrl,
+            string apiKey)
         {
-            client.BaseAddress = new Uri(configuration["PartnerApi.BaseUrl"]);
+            client.BaseAddress = new Uri(apiBaseUrl);
             _client = client;
-            _propertyConverter = propertyConverter;
-            _apiKey = configuration["PartnerApi.Key"];
+            _apiKey = apiKey;
         }
 
-        public async Task<IEnumerable<Models.Agent>> GetTopByPropertyListed(int count = 10)
+        public async Task<IEnumerable<Agent>> GetTopByPropertyListed(int count = 10)
         {
             var queryBuilder = new StringBuilder();
             queryBuilder.Append($"/{_apiKey}/?{WithoutGardenParameters}&page=0&{PageSizeParameter}");
@@ -39,7 +36,7 @@ namespace F.Rankings.Services
             return await GetAllByQuery(count, queryBuilder);
         }
 
-        public async Task<IEnumerable<Models.Agent>> GetTopByPropertyListedWithGarden(int count = 10)
+        public async Task<IEnumerable<Agent>> GetTopByPropertyListedWithGarden(int count = 10)
         {
             var queryBuilder = new StringBuilder();
             queryBuilder.Append($"/{_apiKey}/?{WithGardenParameters}&page=0&{PageSizeParameter}");
@@ -47,15 +44,15 @@ namespace F.Rankings.Services
             return await GetAllByQuery(count, queryBuilder);
         }
 
-        private async Task<IEnumerable<Models.Agent>> GetAllByQuery(int count, StringBuilder queryBuilder)
+        private async Task<IEnumerable<Agent>> GetAllByQuery(int count, StringBuilder queryBuilder)
         {
-            var agentCache = new Dictionary<int, DTO.Agent>();
+            var agentCache = new Dictionary<int, Agent>();
 
             while (true)
             {
                 var response = await _client.GetAsync(queryBuilder.ToString());
 
-                var res = await JsonSerializer.DeserializeAsync<DTO.ApiResponse>(await response.Content.ReadAsStreamAsync());
+                var res = await JsonSerializer.DeserializeAsync<ApiResponse>(await response.Content.ReadAsStreamAsync());
 
                 foreach (var o in res.Objects)
                 {
@@ -65,11 +62,11 @@ namespace F.Rankings.Services
                     }
                     else
                     {
-                        var agent = new DTO.Agent
+                        var agent = new Agent
                         {
                             MakelaarId = o.MakelaarId,
                             MakelaarNaam = o.MakelaarNaam,
-                            PropertyListed = new List<DTO.Property> { o },
+                            PropertyListed = new List<Property> { o },
                         };
 
                         agentCache.Add(agent.MakelaarId, agent);
@@ -83,13 +80,7 @@ namespace F.Rankings.Services
 
             return agentCache.Values
                 .OrderByDescending(x => x.PropertyListed.Count())
-                .Take(count)
-                .Select(x => new Models.Agent
-                {
-                    MakelaarId = x.MakelaarId,
-                    MakelaarNaam = x.MakelaarNaam,
-                    PropertyListed = x.PropertyListed.Select(x => _propertyConverter.ToModel(x)),
-                });
+                .Take(count);
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace F.Rankings.DTO
 {
@@ -18,7 +15,7 @@ namespace F.Rankings.DTO
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(MakelaarId);
+            return MakelaarId.GetHashCode();
         }
     }
 }

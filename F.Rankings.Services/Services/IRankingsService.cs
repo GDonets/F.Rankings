@@ -1,4 +1,4 @@
-﻿using F.Rankings.Models;
+﻿using F.Rankings.DTO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
