@@ -21,7 +21,6 @@ namespace F.Rankings.Models
         public string FotoMedium { get; set; }
         public string FotoSecure { get; set; }
         public string Land { get; set; }
-        public Agent Makelaar { get; set; }
         public Price Prijs { get; set; }
         public DateTime PublicatieDatum { get; set; }
         public string URL { get; set; }
