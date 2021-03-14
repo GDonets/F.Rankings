@@ -10,7 +10,7 @@ namespace F.Rankings.DTO
         public bool GeenExtraKosten { get; set; }
         public string HuurAbbreviation { get; set; }
         public int? Huurprijs { get; set; }
-        public int? HuurprijsOpAanvraag { get; set; }
+        public string HuurprijsOpAanvraag { get; set; }
         public int? HuurprijsTot { get; set; }
         public string KoopAbbreviation { get; set; }
         public int? Koopprijs { get; set; }

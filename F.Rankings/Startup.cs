@@ -1,5 +1,7 @@
 using F.Rankings.Converters;
+using F.Rankings.Infrastructure;
 using F.Rankings.Services;
+using F.Rankings.Services.Clients;
 using F.Rankings.Services.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -8,7 +10,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Polly;
+using Polly.Extensions.Http;
 using System;
+using System.Runtime.Caching;
 
 namespace F.Rankings
 {
@@ -24,23 +28,38 @@ namespace F.Rankings
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var rankingOptions = new RankingsServiceOptions();
-            Configuration.GetSection("PartnerApi").Bind(rankingOptions);
+            var rankingOptions =
+                Configuration.GetSection("PartnerApi").Get<RankingsServiceOptions>();
+            rankingOptions.ApiKey = Configuration["PartnerApi.ApiKey"];
             services.AddSingleton(rankingOptions);
+            services.AddSingleton<ICacheService>(_ =>
+            {
+                return new InMemoryCacheService(
+                    new CacheItemPolicy { 
+                        SlidingExpiration = TimeSpan.FromMinutes(10) 
+                    });
+            });
 
-            services.AddHttpClient<RankingsService>()
-                .AddTransientHttpErrorPolicy(p =>
-                    p.WaitAndRetryAsync(5, count => TimeSpan.FromMilliseconds(count * count * 1000)));
+            var jitterer = new Random();
+            services.AddHttpClient<IBaseHttpClient, BaseHttpClient>()
+                .AddTransientHttpErrorPolicy(builder =>
+                    builder
+                        .OrTransientHttpError()
+                        .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        .WaitAndRetryAsync(6, retryCount =>
+                                TimeSpan.FromMilliseconds((retryCount * retryCount * 1.1 * 1000) + jitterer.Next(0, 100))));
 
+            services.AddScoped<IRankingsService, RankingsService>();
             services.AddTransient<IModelDtoConverter<Models.Price, DTO.Price>, PriceConverter>();
             services.AddTransient<IModelDtoConverter<Models.Property, DTO.Property>, PropertyConverter>();
 
-            services.AddControllersWithViews();
+            services.AddControllers();
+            //services.AddControllersWithViews();
             // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration =>
-            {
-                configuration.RootPath = "ClientApp/dist";
-            });
+            //services.AddSpaStaticFiles(configuration =>
+            //{
+            //    configuration.RootPath = "ClientApp/dist";
+            //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,23 +87,21 @@ namespace F.Rankings
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapControllers();
             });
 
-            app.UseSpa(spa =>
-            {
-                // To learn more about options for serving an Angular SPA from ASP.NET Core,
-                // see https://go.microsoft.com/fwlink/?linkid=864501
+            //app.UseSpa(spa =>
+            //{
+            //    // To learn more about options for serving an Angular SPA from ASP.NET Core,
+            //    // see https://go.microsoft.com/fwlink/?linkid=864501
 
-                spa.Options.SourcePath = "ClientApp";
+            //    spa.Options.SourcePath = "ClientApp";
 
-                if (env.IsDevelopment())
-                {
-                    spa.UseAngularCliServer(npmScript: "start");
-                }
-            });
+            //    if (env.IsDevelopment())
+            //    {
+            //        spa.UseAngularCliServer(npmScript: "start");
+            //    }
+            //});
         }
     }
 }

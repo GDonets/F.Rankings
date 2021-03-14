@@ -10,7 +10,7 @@ namespace F.Rankings.Models
         public Guid? Id { get; set; }
         public int GlobalId { get; set; }
         public string AangebodenSindsTekst { get; set; }
-        public DateTime? AanmeldDatum { get; set; }
+        public string AanmeldDatum { get; set; }
         public int? AantalKamers { get; set; }
         public int? AantalKavels { get; set; }
         public string Aanvaarding { get; set; }
@@ -22,7 +22,7 @@ namespace F.Rankings.Models
         public string FotoSecure { get; set; }
         public string Land { get; set; }
         public Price Prijs { get; set; }
-        public DateTime PublicatieDatum { get; set; }
+        public string PublicatieDatum { get; set; }
         public string URL { get; set; }
         public float WGS84_X { get; set; }
         public float WGS84_Y { get; set; }
