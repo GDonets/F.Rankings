@@ -16,7 +16,7 @@ namespace F.Rankings.Controllers
     public class RankingsController : ControllerBase
     {
         private readonly IRankingsService _service;
-        private readonly IModelDtoConverter<Property, DTO.Property> _propertyConverter;
+        private readonly IModelDtoConverter<Models.Property, DTO.Property> _propertyConverter;
         private readonly ICacheService _cache;
 
         private const string withGardenKey = "topwithgarden";
@@ -25,7 +25,7 @@ namespace F.Rankings.Controllers
         public RankingsController(
             IRankingsService service,
             ICacheService cache,
-            IModelDtoConverter<Property, DTO.Property> propertyConverter)
+            IModelDtoConverter<Models.Property, DTO.Property> propertyConverter)
         {
             _service = service;
             _cache = cache;
@@ -36,27 +36,21 @@ namespace F.Rankings.Controllers
         [HttpGet("topagentswithgarden/{quantity}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<IEnumerable<Agent>>> GetTopAgentsWithGarden(int quantity)
+        public async Task<ActionResult<IEnumerable<RankedAgent>>> GetTopAgentsWithGarden(int quantity)
         {
-            if (quantity < 1) 
+            if (quantity < 1)
             {
                 return BadRequest("Quantity cannot be less than 1");
             }
 
-            if (_cache.TryGet(withGardenKey, out IEnumerable<Agent> lastGet)
-                    && lastGet.Count() == quantity) 
+            if (_cache.TryGet(withGardenKey, out IEnumerable<RankedAgent> lastGet)
+                    && lastGet.Count() == quantity)
             {
                 return Ok(lastGet);
             }
 
             var serviceRes = await _service.GetTopByPropertyListedWithGarden(quantity);
-
-            var res = serviceRes.Select(a => new Agent 
-            { 
-                MakelaarId = a.MakelaarId,
-                MakelaarNaam = a.MakelaarNaam,
-                PropertyListed = a.PropertyListed.Select(p => _propertyConverter.ToModel(p))
-            });
+            IEnumerable<RankedAgent> res = MapServiceResponseToModels(serviceRes);
 
             _cache.TryAdd(withGardenKey, res);
 
@@ -67,31 +61,47 @@ namespace F.Rankings.Controllers
         [HttpGet("topagentsnogarden/{quantity}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<IEnumerable<Agent>>> GetTopAgentsWithoutGraden(int quantity)
+        public async Task<ActionResult<IEnumerable<RankedAgent>>> GetTopAgentsWithoutGraden(int quantity)
         {
             if (quantity < 1)
             {
                 return BadRequest("Quantity cannot be less than 1");
             }
 
-            if (_cache.TryGet(noGardenKey, out IEnumerable<Agent> lastGet)
+            if (_cache.TryGet(noGardenKey, out IEnumerable<RankedAgent> lastGet)
                     && lastGet.Count() == quantity)
             {
                 return Ok(lastGet);
             }
 
             var serviceRes = await _service.GetTopByPropertyListed(quantity);
-
-            var res = serviceRes.Select(a => new Agent
-            {
-                MakelaarId = a.MakelaarId,
-                MakelaarNaam = a.MakelaarNaam,
-                PropertyListed = a.PropertyListed.Select(p => _propertyConverter.ToModel(p))
-            });
+            IEnumerable<RankedAgent> res = MapServiceResponseToModels(serviceRes);
 
             _cache.TryAdd(noGardenKey, res);
 
             return Ok(res);
+        }
+
+        private IEnumerable<RankedAgent> MapServiceResponseToModels(IEnumerable<DTO.Agent> serviceRes)
+        {
+            var counter = 0;
+            var res = serviceRes.Select(a =>
+            {
+                var agent = new Agent
+                {
+                    MakelaarId = a.MakelaarId,
+                    MakelaarNaam = a.MakelaarNaam,
+                    PropertyListed = a.PropertyListed.Select(p => _propertyConverter.ToModel(p))
+                };
+
+                return new RankedAgent
+                {
+                    Agent = agent,
+                    Rank = ++counter
+                };
+            });
+
+            return res;
         }
     }
 }

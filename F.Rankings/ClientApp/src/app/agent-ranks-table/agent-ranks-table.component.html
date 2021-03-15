@@ -1,0 +1,31 @@
+<div class="rankings-container">
+
+  <div class="spinner-container" *ngIf="dataSource.loading$ | async">
+    <mat-spinner style="margin:30vh 60vh; position: absolute;"></mat-spinner>
+  </div>
+
+  <mat-table class="lessons-table mat-elevation-z8" [dataSource]="dataSource">
+
+    <ng-container matColumnDef="rank">
+      <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
+      <mat-cell *matCellDef="let agent">{{agent.rank}}</mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef>Agent Name</mat-header-cell>
+      <mat-cell class="description-cell"
+                *matCellDef="let agent">{{agent.agent.makelaarNaam}}</mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="objectsCount">
+      <mat-header-cell *matHeaderCellDef>Number Of Objects</mat-header-cell>
+      <mat-cell class="duration-cell"
+                *matCellDef="let agent">{{agent.agent.propertyListed.length}}</mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+
+    <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+
+  </mat-table>
+</div>

@@ -55,6 +55,7 @@ namespace F.Rankings
 
             services.AddControllers();
             //services.AddControllersWithViews();
+
             // In production, the Angular files will be served from this directory
             //services.AddSpaStaticFiles(configuration =>
             //{
@@ -76,12 +77,12 @@ namespace F.Rankings
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-            if (!env.IsDevelopment())
-            {
-                app.UseSpaStaticFiles();
-            }
+            //app.UseHttpsRedirection();
+            //app.UseStaticFiles();
+            //if (!env.IsDevelopment())
+            //{
+            //    app.UseSpaStaticFiles();
+            //}
 
             app.UseRouting();
 
