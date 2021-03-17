@@ -2,7 +2,7 @@
 
 For the application to work, you would first set "PartnerApi.ApiKey" User Secret.
 
-UseSPA - related parts of the Startup logic of ASP.NET COre app were commented out due to Visual Studio
+UseSPA - related parts of the Startup logic of ASP.NET Core app were commented out due to Visual Studio
 Angular template not working correctly with Angular 9+. 
 The host simply won't start (https://github.com/dotnet/aspnetcore/issues/17277#issuecomment-562433864).
 
