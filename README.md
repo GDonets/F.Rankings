@@ -7,7 +7,7 @@ Angular template not working correctly with Angular 9+.
 The host simply won't start (https://github.com/dotnet/aspnetcore/issues/17277#issuecomment-562433864).
 
 The Get request implying such a long completion time should instead work on as a background task. 
-The controller action should return 202 Accepted with the URL to the result. However due to background tasks 
+The web app should implement HTTP polling, where controller action should return 202 Accepted with the URL to the result. However due to background tasks 
 implementation being tricky in ASP.NET Core and require additional ceremonies, I decided to skip this step.
 
 Routing in the Angular app is messy. 
